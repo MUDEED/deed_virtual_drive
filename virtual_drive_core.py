@@ -29,7 +29,11 @@ def subst_drive(drive_letter="", path="", remove=False):
     definde_dos_device = ctypes.windll.kernel32.DefineDosDeviceW
 
     if not remove:
-        definde_dos_device.argtypes = [ctypes.c_int, ctypes.c_wchar_p, ctypes.c_wchar_p]
+        definde_dos_device.argtypes = [
+            ctypes.c_int,
+            ctypes.c_wchar_p,
+            ctypes.c_wchar_p,
+        ]
         if definde_dos_device(0, drive_letter, path) == 0:
             print("Subst failed on {}".format(path))
     else:
