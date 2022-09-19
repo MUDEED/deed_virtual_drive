@@ -25,24 +25,23 @@ def available_drives():
 
 def subst_drive(drive_letter="", path="", remove=False):
 
-    path = os.path.abspath(path)
-    definde_dos_device = ctypes.windll.kernel32.DefineDosDeviceW
-
-    if not remove:
-        definde_dos_device.argtypes = [
-            ctypes.c_int,
-            ctypes.c_wchar_p,
-            ctypes.c_wchar_p,
-        ]
-        if definde_dos_device(0, drive_letter, path) == 0:
-            print("Subst failed on {}".format(path))
+    if remove:
+        proc = subprocess.run(
+            ["subst", "/D", drive_letter], capture_output=True, check=False
+        )
+        # os.system("subst /D {}".format(drive_letter))
     else:
-        definde_dos_device.argtypes = [ctypes.c_int, ctypes.c_wchar_p]
-        if definde_dos_device(1, drive_letter) == 0:
-            print("Couldn't remove subst {}".format(drive_letter))
+        proc = subprocess.run(
+            ["subst", drive_letter, path], capture_output=True, check=False
+        )
+
+    if any((proc.stdout, proc.stderr)):
+        return (proc.stdout, proc.stderr)
+
+    return None
 
 
-def get_subst_drive_list():
+def get_subst_drive_dict():
 
     proc = subprocess.Popen(["subst"], stdout=subprocess.PIPE)
     stdout, _ = proc.communicate()
@@ -50,16 +49,14 @@ def get_subst_drive_list():
     if stdout:
         for line in stdout.decode("utf-8").split("\n"):
             if line:
-
                 drive_letter, v_path = line.rsplit(" => ", maxsplit=1)
-
                 drive_dict.setdefault(drive_letter.replace("\\:", ""), v_path)
 
-    print(drive_dict)
     return drive_dict
 
 
 if __name__ == "__main__":
     # subst_drive("X:", os.path.abspath("F:/Blender_Other_Project"))
     # subst_drive(drive_letter="T:", remove=True)
-    get_subst_drive_list()
+    # get_subst_drive_list()
+    pass
