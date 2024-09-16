@@ -3,10 +3,9 @@ import sys
 from functools import partial
 import ctypes
 
-# pylint: disable=no-name-in-module,
 from Qt import QtCompat, QtWidgets, QtCore, QtGui
 
-import virtual_drive_core
+from core import virtual_drive_core
 
 ROOT_PATH = os.path.dirname(__file__)
 MAIN_UI_PATH = os.path.join(ROOT_PATH, "ui", "deed_virtual_drive.ui")
@@ -20,12 +19,8 @@ class MainWindow(QtWidgets.QMainWindow):
         QtCompat.loadUi(MAIN_UI_PATH, self)
         self.setWindowTitle("DEED Virtual Drive")
         dark_title_bar(self)
-        reload_icon = QtGui.QPixmap(
-            os.path.join(ROOT_PATH, "rsrc", "reload.png")
-        )
-        self.hdd_icon = QtGui.QPixmap(
-            os.path.join(ROOT_PATH, "rsrc", "hdd.png")
-        )
+        reload_icon = QtGui.QPixmap(os.path.join(ROOT_PATH, "rsrc", "reload.png"))
+        self.hdd_icon = QtGui.QPixmap(os.path.join(ROOT_PATH, "rsrc", "hdd.png"))
 
         self.setWindowIcon(self.hdd_icon)
         self.setStyleSheet(open("style/bl_dark.qss", "r").read())
@@ -58,9 +53,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionAdd_drive.triggered.connect(self.add_drive)
         self.actionRemove_drive.triggered.connect(self.delete_drive)
         self.actionRemove_All.triggered.connect(self.delete_all_drive)
-        self.actionSetting.triggered.connect(
-            partial(self.open_setting_widget, self)
-        )
+        self.actionSetting.triggered.connect(partial(self.open_setting_widget, self))
 
     def line_edit_changed(self):
 
@@ -216,9 +209,7 @@ class SettingWidget(QtWidgets.QDialog):
             True if parent.settings.value("auto_save") in true_value else False
         )
         self.is_load_startup.setChecked(
-            True
-            if parent.settings.value("load_startup") in true_value
-            else False
+            True if parent.settings.value("load_startup") in true_value else False
         )
 
         geo = self.geometry()
