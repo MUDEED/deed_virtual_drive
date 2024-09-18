@@ -83,7 +83,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.treeWidget.clear()
 
         drive_dict = virtual_drive_core.get_subst_drive_dict()
-        print(drive_dict)
         item_list = []
         for drive_letter, drive_path in drive_dict.items():
             item = QtWidgets.QTreeWidgetItem()
@@ -211,7 +210,6 @@ class MainWindow(QtWidgets.QMainWindow):
         for idx in range(self.treeWidget.topLevelItemCount()):
             item = self.treeWidget.topLevelItem(idx)
             drive_dict[item.text(0)] = str(item.text(1))
-            print(str(item.text(1)))
 
         self.settings.setValue("drive_dict", drive_dict)
 
