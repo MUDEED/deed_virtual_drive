@@ -1,13 +1,16 @@
+import os
 import ctypes
 import string
-import os
 import subprocess
 
 
-def un_available_drives():
+ASCII_LETTERS = string.ascii_uppercase
+
+
+def get_unavailable_drives() -> list[str]:
     drive_bit = ctypes.windll.kernel32.GetLogicalDrives()
     drive_letter_list = []
-    for letter in string.ascii_uppercase:
+    for letter in ASCII_LETTERS:
         if drive_bit & 1:
             drive_letter_list.append(letter)
         drive_bit >>= 1
@@ -15,12 +18,12 @@ def un_available_drives():
     return drive_letter_list
 
 
-def available_drives():
+def get_available_drives() -> list[str]:
 
-    used = un_available_drives()
-    all_letters = list(string.ascii_uppercase)
+    used_drive = get_unavailable_drives()
+    all_letters = list(ASCII_LETTERS)
 
-    return sorted(list(set(all_letters) - set(used)))
+    return sorted(list(set(all_letters) - set(used_drive)))
 
 
 def subst_drive(drive_letter="", path="", remove=False):
@@ -29,7 +32,7 @@ def subst_drive(drive_letter="", path="", remove=False):
         proc = subprocess.run(
             ["subst", "/D", drive_letter], capture_output=True, check=False
         )
-        # os.system("subst /D {}".format(drive_letter))
+
     else:
         proc = subprocess.run(
             ["subst", drive_letter, path], capture_output=True, check=False
@@ -43,20 +46,20 @@ def subst_drive(drive_letter="", path="", remove=False):
 
 def get_subst_drive_dict():
 
-    proc = subprocess.Popen(["subst"], stdout=subprocess.PIPE)
+    proc = subprocess.Popen(
+        "chcp 65001 | subst",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        env=os.environ,
+        shell=True,
+        encoding="utf-8",
+    )
     stdout, _ = proc.communicate()
     drive_dict = {}
     if stdout:
-        for line in stdout.decode("utf-8").split("\n"):
+        for line in stdout.split("\n"):
             if line:
                 drive_letter, v_path = line.rsplit(" => ", maxsplit=1)
                 drive_dict.setdefault(drive_letter.replace("\\:", ""), v_path)
 
     return drive_dict
-
-
-if __name__ == "__main__":
-    # subst_drive("X:", os.path.abspath("F:/Blender_Other_Project"))
-    # subst_drive(drive_letter="T:", remove=True)
-    # get_subst_drive_list()
-    pass

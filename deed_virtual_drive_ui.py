@@ -1,16 +1,20 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 from functools import partial
-import ctypes
 
-# pylint: disable=no-name-in-module,
-from Qt import QtCompat, QtWidgets, QtCore, QtGui
+from Qt import QtCompat
+from Qt import QtWidgets
+from Qt import QtCore
+from Qt import QtGui
 
-import virtual_drive_core
+from core import virtual_drive_core
+from core import qt_utils
+from widget import item_button
+from widget import setting_widget
 
 ROOT_PATH = os.path.dirname(__file__)
 MAIN_UI_PATH = os.path.join(ROOT_PATH, "ui", "deed_virtual_drive.ui")
-SETTING_UI_PATH = os.path.join(ROOT_PATH, "ui", "setting.ui")
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -19,36 +23,30 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(parent=parent)
         QtCompat.loadUi(MAIN_UI_PATH, self)
         self.setWindowTitle("DEED Virtual Drive")
-        dark_title_bar(self)
-        reload_icon = QtGui.QPixmap(
-            os.path.join(ROOT_PATH, "rsrc", "reload.png")
-        )
-        self.hdd_icon = QtGui.QPixmap(
-            os.path.join(ROOT_PATH, "rsrc", "hdd.png")
-        )
+        qt_utils.dark_title_bar(self)
+
+        reload_icon = QtGui.QPixmap(os.path.join(ROOT_PATH, "rsrc", "reload.png"))
+        self.hdd_icon = QtGui.QPixmap(os.path.join(ROOT_PATH, "rsrc", "hdd.png"))
 
         self.setWindowIcon(self.hdd_icon)
-        self.setStyleSheet(open("style/bl_dark.qss", "r").read())
+        qt_utils.set_stylesheet(os.path.join(ROOT_PATH, "style", "bl_dark.qss"), self)
+
         self.comboBox.setView(QtWidgets.QListView())
         self.reload_btn.setText("")
         self.reload_btn.setIcon(QtGui.QIcon(reload_icon))
-        self.update_drive()
+
         self.comboBox.setCurrentIndex(0)
         self.settings = QtCore.QSettings(
-            os.path.join(
-                os.path.expanduser("~"),
-                "deed_virtual_drive",
-                "dvd_settings.ini",
-            ),
-            QtCore.QSettings.IniFormat,
+            "deed_virtual_drive",
+            "dvd_settings.ini",
         )
 
         self.lineEdit.textChanged.connect(self.line_edit_changed)
 
-        self.lineEdit.setPlaceholderText("E.g. C:\Program Files")
+        self.lineEdit.setPlaceholderText("E.g. C:\\Program Files")
         self.pushButton.clicked.connect(self.add_drive)
         self.pushButton_2.clicked.connect(self.lineEdit.clear)
-        self.toolButton.clicked.connect(self.directory_path)
+        self.toolButton.clicked.connect(self.set_directory_path)
         self.reload_btn.clicked.connect(self.update_drive)
 
         self.pushButton.setDisabled(True)
@@ -58,9 +56,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionAdd_drive.triggered.connect(self.add_drive)
         self.actionRemove_drive.triggered.connect(self.delete_drive)
         self.actionRemove_All.triggered.connect(self.delete_all_drive)
-        self.actionSetting.triggered.connect(
-            partial(self.open_setting_widget, self)
-        )
+        self.actionSetting.triggered.connect(partial(self.open_setting_widget, self))
+
+        if self.settings.value("auto_load") in qt_utils.TRUE_VALUE:
+            self.load_drive_from_setting()
+        self.update_drive()
 
     def line_edit_changed(self):
 
@@ -76,13 +76,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.comboBox.addItems(
             [
                 "{}:".format(drive_lt)
-                for drive_lt in virtual_drive_core.available_drives()
+                for drive_lt in virtual_drive_core.get_available_drives()
             ]
         )
 
         self.treeWidget.clear()
 
         drive_dict = virtual_drive_core.get_subst_drive_dict()
+        print(drive_dict)
         item_list = []
         for drive_letter, drive_path in drive_dict.items():
             item = QtWidgets.QTreeWidgetItem()
@@ -98,28 +99,20 @@ class MainWindow(QtWidgets.QMainWindow):
             self.actionRemove_drive.setEnabled(True)
             self.actionRemove_All.setEnabled(True)
 
+        img_path_list = (
+            os.path.join(ROOT_PATH, "rsrc", "delete-button.png"),
+            os.path.join(ROOT_PATH, "rsrc", "delete-button_hover.png"),
+            os.path.join(ROOT_PATH, "rsrc", "delete-button_press"),
+        )
+        # remove button widget
         for items in item_list:
-            btn = QtWidgets.QPushButton("")
-            btn.autoFillBackground()
-            btn.setFixedSize(30, 30)
-            btn.setToolTip("remove")
-            btn.setStyleSheet(
-                """
-                * QPushButton{
-                    border-image: url("rsrc/delete-button.png");
-                    margin:2px;
-                }
-                * QPushButton:hover,
-                * QPushButton:selected{
-                    border-image: url("rsrc/delete-button_hover.png");                
-                }
-                * QPushButton:pressed{
-                    border-image: url("rsrc/delete-button_press.png");
-                }
-            """
-            )
-            btn.clicked.connect(partial(self.delete_drive, items))
-            self.treeWidget.setItemWidget(items, 2, btn)
+            item_btn = item_button.ItemButton(*img_path_list)
+            item_btn.autoFillBackground()
+            item_btn.setFixedSize(30, 30)
+            item_btn.setToolTip("remove")
+
+            item_btn.clicked.connect(partial(self.delete_drive, items))
+            self.treeWidget.setItemWidget(items, 2, item_btn)
 
         self.treeWidget.header().resizeSection(1, 500)
         self.treeWidget.resizeColumnToContents(2)
@@ -135,7 +128,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.lineEdit.clear()
             self.update_drive()
 
-    def directory_path(self):
+    def set_directory_path(self):
         exist_dir = QtWidgets.QFileDialog.getExistingDirectory()
         if exist_dir:
             self.lineEdit.setText(exist_dir)
@@ -168,7 +161,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         message_box = QtWidgets.QMessageBox(parent=self)
 
-        dark_title_bar(message_box)
+        qt_utils.dark_title_bar(message_box)
         message_box.setText(text)
         message_box.setWindowTitle(title)
 
@@ -182,84 +175,51 @@ class MainWindow(QtWidgets.QMainWindow):
         message_box.exec_()
 
     def open_setting_widget(self, parent=None):
-        self.setting_widget = SettingWidget(parent)
-        self.setting_widget.exec_()
-        if self.setting_widget.result():
+        _setting_widget = setting_widget.SettingWidget(parent)
+        _setting_widget.exec()
+
+        if _setting_widget.result():
             self.settings.setValue(
-                "auto_load", self.setting_widget.is_auto_load.isChecked()
+                "auto_load", _setting_widget.is_auto_load.isChecked()
             )
             self.settings.setValue(
-                "auto_save", self.setting_widget.is_auto_save_drive.isChecked()
-            )
-            self.settings.setValue(
-                "load_startup", self.setting_widget.is_load_startup.isChecked()
+                "auto_save", _setting_widget.is_auto_save_drive.isChecked()
             )
 
+            self.save_setting_drive()
+            self.settings.sync()
 
-class SettingWidget(QtWidgets.QDialog):
-    def __init__(self, parent=None):
-        super(SettingWidget, self).__init__(parent)
-        QtCompat.loadUi(SETTING_UI_PATH, self)
-        dark_title_bar(self)
-        self.setWindowTitle("settings")
-        self.setWindowModality(QtCore.Qt.WindowModal)
-        self.setWindowFlags(
-            QtCore.Qt.Dialog
-            | QtCore.Qt.WindowTitleHint
-            | QtCore.Qt.WindowCloseButtonHint
-        )
-        true_value = (True, "True", "true")
-        self.is_auto_load.setChecked(
-            True if parent.settings.value("auto_load") in true_value else False
-        )
-        self.is_auto_save_drive.setChecked(
-            True if parent.settings.value("auto_save") in true_value else False
-        )
-        self.is_load_startup.setChecked(
-            True
-            if parent.settings.value("load_startup") in true_value
-            else False
-        )
+    def load_drive_from_setting(self):
 
-        geo = self.geometry()
-        geo.moveCenter(parent.geometry().center())
-        self.setGeometry(geo)
+        drive_dict = self.settings.value("drive_dict") or {}
 
-        self.cancel_button.clicked.connect(self.reject)
-        self.ok_button.isDefault()
-        self.ok_button.clicked.connect(self.accept)
+        for drive_letter, drive_path in drive_dict.items():
+            virtual_drive_core.subst_drive(
+                drive_letter,
+                drive_path,
+            )
 
-        self.True_name()
+    def closeEvent(self, event):
 
-    def True_name(self):
-        print("test")
+        super(MainWindow, self).closeEvent(event)
 
+        if self.settings.value("auto_save") in qt_utils.TRUE_VALUE:
+            self.save_setting_drive()
 
-def dark_title_bar(widget=None):
-    """
-    MORE INFO:
-    https://docs.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute
-    """
+    def save_setting_drive(self):
+        drive_dict = {}
+        for idx in range(self.treeWidget.topLevelItemCount()):
+            item = self.treeWidget.topLevelItem(idx)
+            drive_dict[item.text(0)] = str(item.text(1))
+            print(str(item.text(1)))
 
-    dwmwa_use_immersive_dark_mode = 20
-    set_window_attribute = ctypes.windll.dwmapi.DwmSetWindowAttribute
-    # get_parent = ctypes.windll.user32.GetParent
-    # hwnd = widget.winId() if widget else self.winId()
-    hwnd = widget.winId()
-    value = ctypes.c_int(1)
-    set_window_attribute(
-        hwnd,
-        dwmwa_use_immersive_dark_mode,
-        ctypes.byref(value),
-        ctypes.sizeof(value),
-    )
+        self.settings.setValue("drive_dict", drive_dict)
 
 
 if __name__ == "__main__":
 
     app = QtWidgets.QApplication(sys.argv)
-    window = MainWindow()
+    ui = MainWindow()
+    ui.show()
 
-    window.show()
-
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
