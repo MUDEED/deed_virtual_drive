@@ -18,7 +18,3 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program. If not, see https://www.gnu.org/licenses/.   
 
 
-pyinstaller spec generation command:
-```
-pyinstaller --paths env\Lib\site-packages deed_virtual_drive_ui.py --onedir --windowed --hidden-import "PySide6.QtXml" --hidden-import "PySide6.QtUiTools" --add-data rsrc:rsrc\image --add-data ui:rsrc\ui --add-data style:rsrc\style --name "deed virtual drive" 
-```
