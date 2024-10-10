@@ -9,6 +9,5 @@ PySide6_Essentials==6.7.2
 pywin32==306
 pywin32-ctypes==0.2.3
 Qt.py==1.4.1
-QtPy==2.4.1
 shiboken6==6.7.2
 types-pyside2==5.15.2.1.7
