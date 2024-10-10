@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v3
@@ -19,9 +19,6 @@ jobs:
       - name: Build executable
         run: |
           pyinstaller deed_virtual_drive_ui.py --onedir --windowed --hidden-import "PySide6.QtXml" --hidden-import "PySide6.QtUiTools" --add-data rsrc:rsrc --add-data ui:ui --add-data style:style --name "deed virtual drive" --contents-directory . --noconfirm
-      # - name: Create ZIP file
-      #   run: |
-      #     zip -r deed_virtual_drive.zip dist
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
